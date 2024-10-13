@@ -26,12 +26,10 @@ button.Text = ""
 button.Parent = frame
 
 button.MouseButton1Click:Connect(function()
-    local hiddenUI = game:GetService("CoreGui"):WaitForChild("HiddenUI")
-    local targetScreenGui = hiddenUI:WaitForChild("ScreenGui")
-    targetScreenGui.Enabled = not targetScreenGui.Enabled
-    if targetScreenGui.Enabled then
-        print("ScreenGui enabled")
-    else
-        print("ScreenGui disabled")
-    end
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local keyCode = Enum.KeyCode.LeftControl
+
+    VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    wait(0.1)
+    VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
 end)
