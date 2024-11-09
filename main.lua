@@ -1080,6 +1080,74 @@ end)
 
 
 ---------------------------------------------------------------------------------------------------------------------------------
+local workspace, players, runService = game:GetService("Workspace"), game:GetService("Players"), game:GetService("RunService")
+local player = players.LocalPlayer
+local glowPart, light, glowEnabled = nil, nil, false
+
+local function createGlowPart()
+    local character, head = player.Character or player.CharacterAdded:Wait(), player.Character:WaitForChild("Head")
+    glowPart = Instance.new("Part", workspace)
+    glowPart.Size, glowPart.Shape, glowPart.Anchored, glowPart.CanCollide, glowPart.Transparency = Vector3.new(2, 2, 2), Enum.PartType.Ball, true, false, 0.5
+    light = Instance.new("PointLight", glowPart)
+    light.Brightness, light.Range = 10, 20
+
+    runService.RenderStepped:Connect(function()
+        if glowPart and player.Character:FindFirstChild("Head") then
+            glowPart.Position = player.Character.Head.Position + Vector3.new(0, 5, 0)
+        end
+    end)
+end
+
+local function toggleGlow(on)
+    if on and not glowPart then
+        createGlowPart()
+    elseif not on and glowPart then
+        glowPart:Destroy()
+        glowPart = nil
+    end
+end
+
+local function onCharacterAdded()
+    toggleGlow(glowEnabled)
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then onCharacterAdded(player.Character) end
+
+Tabs.ModTab:AddToggle("LightingOnMe", {Title = "Toggle Lighting", Default = false }):OnChanged(function(state)
+    glowEnabled = state
+    toggleGlow(glowEnabled)
+end)
+
+Tabs.ModTab:AddColorpicker("LightColorpicker", {Title = "Colorpicker", Default = Color3.fromRGB(96, 205, 255)}):OnChanged(function()
+    if light then light.Color = Colorpicker.Value end
+end)
+
+Tabs.ModTab:AddSlider("RangeSlider", {Title = "Light Range", Min = 0, Max = 50, Default = 20, Rounding = 1}):OnChanged(function(Value)
+    if light then light.Range = Value end
+end)
+
+Tabs.ModTab:AddSlider("BrightnessSlider", {Title = "Light Brightness", Min = 0, Max = 50, Default = 10, Rounding = 1}):OnChanged(function(Value)
+    if light then light.Brightness = Value end
+end)
+
+local ToDisable = {Textures = false}
+
+local function toggleTextures()
+    if ToDisable.Textures then
+        for _, v in next, game:GetDescendants() do
+            if v:IsA("Decal") or v:IsA("Texture") then
+                v.Texture = ""
+            end
+        end
+    end
+end
+
+Tabs.ModTab:AddToggle("Notexture", {Title = "No Texture", Default = false}):OnChanged(function()
+    ToDisable.Textures = not ToDisable.Textures
+    toggleTextures()
+end)
+
 ---------------------------------------------------------------------------------------------------------------------------------
 
 
