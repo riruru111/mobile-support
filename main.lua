@@ -737,7 +737,7 @@ alignTextLabels()
 
 -- Adding the toggle UI
 local Toggle = Tabs.Silent:AddToggle("SilentAim", {Title = "Silent Aim", Description = "Uses Rayvast to defelect hitmaker to closest humanoid near mouse.", Default = false }) 
-
+Options.SilentAim:SetValue(false)
 -- Variable to track if ESP is enabled or not
 local ESPEnabled = Toggle.Value
 
@@ -865,7 +865,7 @@ Toggle:OnChanged(function()
         alignTextLabels()
     end
 end)
-
+Options.AimbotToggle:SetValue(false)
 
 
 
