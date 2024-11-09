@@ -3563,70 +3563,49 @@ end)
 
 ---------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------
-
 local player = game:GetService("Players").LocalPlayer
 local username = player.Name
 local firstPersonFolder = workspace.ViewModels.FirstPerson
+local originalSizes = {}  -- Store original arm sizes
 
--- Store the original size of LeftArm and RightArm
-local originalSizes = {}
-
--- Function to modify the arms of the model
+-- Arm modification function
 local function modifyArms(model, toggleState)
-    local leftArm = model:FindFirstChild("LeftArm")
-    local rightArm = model:FindFirstChild("RightArm")
-
+    local leftArm, rightArm = model:FindFirstChild("LeftArm"), model:FindFirstChild("RightArm")
+    
     if leftArm then
-        -- Remove the Mesh from LeftArm if the toggle is on
         if toggleState then
             local leftArmMesh = leftArm:FindFirstChild("Mesh")
-            if leftArmMesh then
-                leftArmMesh:Destroy()
-            end
-            -- Set the size of LeftArm to (0, 0, 0)
+            if leftArmMesh then leftArmMesh:Destroy() end
             leftArm.Size = Vector3.new(0, 0, 0)
         else
-            -- If toggle is off, restore the original size
-            if not originalSizes[leftArm] then
-                originalSizes[leftArm] = leftArm.Size
-            end
+            originalSizes[leftArm] = originalSizes[leftArm] or leftArm.Size
             leftArm.Size = originalSizes[leftArm]
         end
     end
 
     if rightArm then
-        -- Remove the Mesh from RightArm if the toggle is on
         if toggleState then
             local rightArmMesh = rightArm:FindFirstChild("Mesh")
-            if rightArmMesh then
-                rightArmMesh:Destroy()
-            end
-            -- Set the size of RightArm to (0, 0, 0)
+            if rightArmMesh then rightArmMesh:Destroy() end
             rightArm.Size = Vector3.new(0, 0, 0)
         else
-            -- If toggle is off, restore the original size
-            if not originalSizes[rightArm] then
-                originalSizes[rightArm] = rightArm.Size
-            end
+            originalSizes[rightArm] = originalSizes[rightArm] or rightArm.Size
             rightArm.Size = originalSizes[rightArm]
         end
     end
 end
 
--- Function to find and modify the model when it changes
+-- Function to handle model updates
 local function onModelChanged()
-    -- Find the model containing the local player's username
-    local modelToModify = nil
+    local modelToModify
     for _, model in pairs(firstPersonFolder:GetChildren()) do
         if model.Name:find(username) then
             modelToModify = model
             break
         end
     end
-
-    -- If a new model is found, modify its arms
+    
     if modelToModify then
-        -- Apply the toggle state to modify the arms
         local toggleState = Options.NoHands.Value
         modifyArms(modelToModify, toggleState)
     else
@@ -3634,55 +3613,37 @@ local function onModelChanged()
     end
 end
 
--- Initially check and modify the first model
 onModelChanged()
-
--- Listen for changes in the FirstPerson folder and apply changes to the new model
 firstPersonFolder.ChildAdded:Connect(onModelChanged)
 firstPersonFolder.ChildRemoved:Connect(onModelChanged)
 
--- Toggle implementation
-local Toggle = Tabs.ModTab:AddToggle("NoHands", {Title = "Ghost Hands", Default = false})
-
-Toggle:OnChanged(function()
+-- Toggle for "Ghost Hands" effect
+local noHandsToggle = Tabs.ModTab:AddToggle("NoHands", {Title = "Ghost Hands", Default = false})
+noHandsToggle:OnChanged(function()
     print("Toggle changed:", Options.NoHands.Value)
     if textLabels and textLabels.ghosttxt then
-        textLabels.ghosttxt.Visible = Toggle.Value
-        fadeText(textLabels.ghosttxt, Toggle.Value)
+        textLabels.ghosttxt.Visible = noHandsToggle.Value
+        fadeText(textLabels.ghosttxt, noHandsToggle.Value)
         alignTextLabels()
     end
-
-    -- Recheck the model and apply the toggle state to the arms
     onModelChanged()
 end)
 
-
-
+-- Static Transparency Effect
 local RunService = game:GetService("RunService")
-local firstPerson = workspace.ViewModels.FirstPerson
-
--- Table to store parts for the effect
 local affectedParts = {}
 
--- Function to apply static transparency to MeshParts
+-- Apply and remove transparency functions
 local function applyStaticTransparency()
-    -- Clear the previous parts to avoid applying effects to the old model
-    affectedParts = {}
-
-    -- Loop through all descendants in the FirstPerson model
-    for _, descendant in ipairs(firstPerson:GetDescendants()) do
-        -- Check if the descendant is a Model and contains a Body part
+    affectedParts = {}  -- Reset affected parts
+    for _, descendant in ipairs(firstPersonFolder:GetDescendants()) do
         if descendant:IsA("Model") and descendant:FindFirstChild("ItemVisual") then
             local body = descendant.ItemVisual.Body
-            -- Check if the Body part exists
             if body then
-                -- Loop through all children in the Body model
                 for _, part in ipairs(body:GetChildren()) do
-                    -- Check if the child is a MeshPart
                     if part:IsA("MeshPart") then
-                        -- Set the static transparency value
                         part.Transparency = 0.6
-                        table.insert(affectedParts, part)  -- Store the part for reference
+                        table.insert(affectedParts, part)
                     end
                 end
             end
@@ -3690,44 +3651,38 @@ local function applyStaticTransparency()
     end
 end
 
--- Function to remove static transparency from MeshParts
 local function removeStaticTransparency()
     for _, part in ipairs(affectedParts) do
-        part.Transparency = 0  -- Reset transparency back to 0
+        if part then part.Transparency = 0 end
     end
+    affectedParts = {}  -- Clear the affected parts list
 end
 
--- Function to monitor and reapply static transparency if the model changes
+-- Monitor model changes
 local function monitorModelChange()
     local lastModel = nil
-    -- Monitor for any changes in the FirstPerson model
     RunService.Heartbeat:Connect(function()
-        local currentModel = firstPerson:FindFirstChildOfClass("Model")
+        local currentModel = firstPersonFolder:FindFirstChildOfClass("Model")
         if currentModel ~= lastModel then
             lastModel = currentModel
-            -- Reapply static transparency if the toggle is on
-            if Toggle.Value then
-                applyStaticTransparency()  -- Reapply the static transparency to the new model
-            end
+            if transparencyToggle.Value then applyStaticTransparency() end
         end
     end)
 end
 
--- Start monitoring the model changes
 monitorModelChange()
 
-
--- Add a Toggle to enable/disable the effect
-local Toggle = Tabs.ModTab:AddToggle("TransparencyToggle", {
-    Title = "Material Weapon",  -- Title of the toggle
-    Default = false,                -- Default state (false means the effect is off by default)
+-- Toggle for "Material Weapon" effect
+local transparencyToggle = Tabs.ModTab:AddToggle("TransparencyToggle", {
+    Title = "Material Weapon",
+    Default = false,
 })
 
-Toggle:OnChanged(function()
-    if Toggle.Value then
-        applyStaticTransparency()  -- Apply the static transparency if the toggle is on
+transparencyToggle:OnChanged(function()
+    if transparencyToggle.Value then
+        applyStaticTransparency()
     else
-        removeStaticTransparency()  -- Remove the static transparency if the toggle is off
+        removeStaticTransparency()
     end
 end)
 
